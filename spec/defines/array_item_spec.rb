@@ -1,6 +1,5 @@
 require 'spec_helper'
 require 'facets'
-require 'puppetlabs_spec_helper/puppetlabs_spec/puppet_internals'
 
 describe 'plist::array_item', :type => 'define' do
 	let(:title) { 'test' }
@@ -85,6 +84,4 @@ describe 'plist::array_item', :type => 'define' do
 			end
 		end
 	end
-
-    # it { should raise_error(Puppet::Error, /Either 'domain' and 'key' or 'plistfile' must be provided/) }
 end
