@@ -4,6 +4,12 @@ require 'puppet-lint/tasks/puppet-lint'
 require 'rspec/core/rake_task'
 require 'rspec'
 
+RSpec.configure do |config|
+  config.expect_with :rspec do |c|
+    c.syntax = :expect
+  end
+end
+
 PuppetLint.configuration.send('disable_80chars')
 PuppetLint.configuration.ignore_paths = ["spec/**/*.pp", "pkg/**/*.pp"]
 

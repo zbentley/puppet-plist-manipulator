@@ -1,4 +1,4 @@
-require 'spec_helper'
+require 'puppetlabs_spec_helper/module_spec_helper'
 require 'facets'
 
 describe 'plist::array_item', :type => 'define' do
