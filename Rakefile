@@ -28,5 +28,7 @@ end
 
 desc "Run local acceptance tests"
 RSpec::Core::RakeTask.new(:serverspec) do |t|
+  # Acceptance tests require symlinks created by spec_prep, so run it now.
+  Rake::Task[:spec_prep].invoke
   t.pattern = 'spec/acceptance/**/*_spec.rb'
 end
