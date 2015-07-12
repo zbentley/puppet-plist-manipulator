@@ -4,53 +4,14 @@ require 'facets'
 describe 'plist::array_item', :type => 'define' do
 	let(:title) { 'test' }
 
-	describe 'domain/key/plistfile XOR assertions' do
+	describe "'ensure' assertions" do
 		let(:xorfailuremessage) { "'domain' and 'key' must both be set, and cannot be combined with 'plistfile'" }
 		params = {
 			:ensure => "foo",
-			:domain => "foo",
-			:key => "foo",
-			:plistfile => "foo",
-		}
-
-		context "when only 'ensure' is supplied" do
-			let(:params) { params.slice(:ensure) }
-			it { is_expected.to raise_error(Puppet::Error, /#{xorfailuremessage}/ ) }
-		end
-
-		context "when 'domain' is supplied" do
-			let(:params) { params.slice(:ensure, :domain) }
-			it { is_expected.to raise_error(Puppet::Error, /#{xorfailuremessage}/) }
-		end
-
-		context "when 'domain', 'key', and 'plistfile' are supplied" do
-			let(:params) { params }
-			it { is_expected.to raise_error(Puppet::Error, /#{xorfailuremessage}/) }
-		end
-
-		context "when 'domain' and 'plistfile' are supplied" do
-			let(:params) { params.except(:key) }
-			it { is_expected.to raise_error(Puppet::Error, /#{xorfailuremessage}/) }
-		end
-
-		context "when 'domain' is supplied without 'key'" do
-			let(:params) { params.except(:key, :plistfile) }
-			it { is_expected.to raise_error(Puppet::Error, /#{xorfailuremessage}/) }
-		end
-
-		# ZBTODO implement
-		context "when 'plistfile' is supplied" do
-			let(:params) { params.except(:domain, :key) }
-			it { is_expected.to raise_error(Puppet::Error, /not implemented/) }
-		end
-
-	end
-
-	describe "'ensure' assertions" do
-		params = {
-			:ensure => "foo",
-			:domain => "foo",
-			:key => "foo",
+			:value => "foo",
+			:write_command => "/usr/bin/defaults write foo bar -array",
+			:read_command => "/usr/bin/defaults read foo bar -array",
+			:append_command => "/usr/bin/defaults write foo bar -array-add",
 		}
 
 		context 'when no parameters are supplied' do
@@ -62,7 +23,6 @@ describe 'plist::array_item', :type => 'define' do
 			let(:params) { params }
 			it { is_expected.to raise_error(Puppet::Error, /'ensure' must be 'once', 'present', or 'absent/) }
 		end
-
 
 		["present", "absent", "once"].each do |ens|
 			context "when 'ensure' is '#{ens}'" do

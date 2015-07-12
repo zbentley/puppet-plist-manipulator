@@ -1,4 +1,4 @@
-perl -e '
+/usr/bin/perl -e '
     use strict;
     use warnings;
     no warnings "uninitialized";

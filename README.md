@@ -27,3 +27,7 @@ management, etc.) this is the time to mention it.
 	Undocumented
 	Poor tests
 	Too fragile dependent on weird system libs
+	No puppet-uniqueness/global lockin
+
+Known issues:
+- Resources can be redeclared if the same plist is addressed with plistfile and without.
