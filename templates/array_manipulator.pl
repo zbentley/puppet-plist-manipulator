@@ -20,7 +20,9 @@
     foreach my $line (split("\n", $raw)) {
         # Remove leading spaces and double quotes, and trailing double quotes,
         # commas, and spaces.
-        $line =~ s/(?:\A\s+?"|",?\s*?\z)//g;
+        $line =~ s/\A\s+|\s+\z//g;
+        $line =~ s/\A"(.+?)"\z/$1/g;
+        $line =~ s/,\z//g;
         push(@lines, $line);
     }
     @lines = splice(@lines, 1, -1);

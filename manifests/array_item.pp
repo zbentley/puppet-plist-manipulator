@@ -1,4 +1,3 @@
-# If before, after not set, just array-add it.
 define plist::array_item (
 	$ensure,
 	$value,
@@ -72,10 +71,9 @@ define plist::array_item (
 				}
 			}
 			exec { "Prepend new value":
-				# Rationale for this convoluted command is at the top of this module.
-				command => "out=$(${sanitizecmd}) || exit 1; echo \$out | xargs ${write_command} '${value}'",
+				command => "echo '${value}' \$(${sanitizecmd}) | xargs ${write_command}",
 				# Only prepend entries if they exist and are not first.
-				unless => "${sanitizecmd} '${value}' --existsat 0";
+				unless => "${sanitizecmd} '${value}' --exists";
 			}
 		}
 	}
