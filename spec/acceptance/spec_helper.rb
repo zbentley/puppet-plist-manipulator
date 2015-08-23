@@ -5,6 +5,51 @@ require "rake"
 set :backend, :exec
 set :disable_sudo, true
 
+# Keep the tempfile variables in a global to prevent them from being destroyed
+# when we don't want them to be.
+$tempfiles = []
+def tempfile_manifest(opts)
+  tmpfile = Tempfile.new(['com.test', '.plist'], '/Users/zbentley/Library/Preferences')
+  $tempfiles.push(tmpfile)
+  plist_file_name = File.basename(tmpfile.path)
+  manifest_attrs = "";
+  opts.each do |key, value|
+    manifest_attrs += "#{key}  =>  '#{value}',\n"
+  end
+
+    manifest = <<END
+  plist::item { 'test' :
+    #{manifest_attrs}
+    domain => '#{plist_file_name}';
+  }
+END
+  return {
+    :manifest => manifest,
+    :filename => plist_file_name,
+    :filepath => tmpfile.path,
+  }
+end
+
+def write_array_values(filename, key, values = "")
+  it "can set up file" do
+    cmd = command("/usr/bin/defaults write #{filename} #{key} -array #{values}")
+    expect(cmd.exit_status).to be_zero
+    expect(cmd.stdout).to be_empty
+  end
+end
+
+def check_array_values(filename, key, values = [])
+  cmd = command("/usr/bin/defaults read #{filename} #{key}")
+  it ".plist has expected values" do
+    # Discard the first and last (parentheses), trailing commas, and strip whitespace on the rest.
+    significantvalues = cmd.stdout.split("\n").map! do |item|
+      item.strip().chomp(",")
+    end
+    expect(significantvalues[1...-1]).to eq values
+  end
+end
+
+
 def with_manifest(manifest, name = false, opts = {}, &block)
   unless opts.has_key? :expect_changes
     opts[:expect_changes] = true

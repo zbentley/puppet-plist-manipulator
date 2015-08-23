@@ -24,57 +24,44 @@ define plist::array_item (
 	# doesn't work with relative paths. The template() function does, however.
 	$sanitizecmd = template("plist/array_manipulator.pl")
 
-	if ! ( $ensure in ["present", "absent", "once"] ) {
-		fail("'ensure' must be 'once', 'present', or 'absent'.")
+	$position = str2bool($append) ? {
+		true    => "last",
+		false => "first"
+	}
+
+	if ! ( $ensure in ["present", "exists", "once", "atposition", "absent"] ) {
+		fail("'ensure' must be 'once', 'present', 'exists', 'atposition' or 'absent'.")
 	} elsif $ensure == "absent" {
+		fail ("TOOODO")
 		if $append != undef {
 			fail("'append' cannot be combined with ensure => 'absent'.")
 		} else {
 			# TODO ensure absent before, after (index?)
 			exec { "Remove existing entries":
-				command => "${sanitizecmd} --value '${value}' --exclude | xargs ${write_command}",
+				command => "${sanitizecmd} --value '${value}' --exclude",
 				# Only remove entries if they exist.
 				onlyif => "${sanitizecmd} --value '${value}' --exists";
 			}
 		}
-	} else {
-		if $before_element {
-			# TODO before support
-			fail("'before_value' is not implemented.")
-		} elsif $after_element {
-			# TODO after support
-			fail("'after_value' is not implemented.")
-		} elsif $append { # Append
-			if $ensure == "once" {
-				exec { "Remove previous entries before appending new one":
-					command => "${sanitizecmd} '${value}' --exclude | xargs ${write_command}",
-					# Ensures proper ordering.
-					before => Exec["Append new value"],
-					# Only remove previous entries if they exist.
-					onlyif => "${sanitizecmd} '${value}' --exists";
-				}
+	} elsif $ensure == "present" or $ensure == "exists" {
+		exec { "Install new value":
+			command => "${sanitizecmd} '${value}' --${position}",
+			# Only install entries if they are not in the array.
+			unless => "${sanitizecmd} '${value}' --exists";
+		}
+	} else { # ensure is "atposition" or "once"
+		if $ensure == "once" {
+			exec { "Remove previous entries before installing new one":
+				command => "${sanitizecmd} '${value}' --exclude",
+				# Ensures proper ordering.
+				before => Exec["Install new value"],
+				# Only remove previous entries if they exist at non-desired positions in the list.
+				onlyif => "${sanitizecmd} '${value}' --exists && ! ${sanitizecmd} '${value}' --existsat ${position}";
 			}
-			exec { "Append new value":
-				command => "${append_command} ${value}",
-				# Only append entries if they exist and are not last.
-				unless => "${sanitizecmd} '${value}' --existsat -1";
-			}
-
-		} else { # Prepend
-			if $ensure == "once" {
-				exec { "Remove previous entries before prepending new one":
-					command => "${sanitizecmd} '${value}' --exclude | xargs ${write_command}",
-					# Ensures proper ordering.
-					before => Exec["Prepend new value"],
-					# Only remove previous entries if they exist.
-					onlyif => "${sanitizecmd} '${value}' --exists";
-				}
-			}
-			exec { "Prepend new value":
-				command => "${sanitizecmd} '${value}' --prepend",
-				# Only prepend entries if they exist and are not first.
-				unless => "${sanitizecmd} '${value}' --exists";
-			}
+		}
+		exec { "Install new value":
+			command => "${sanitizecmd} '${value}' --${position}",
+			unless => "${sanitizecmd} '${value}' --existsat ${position}";
 		}
 	}
 }

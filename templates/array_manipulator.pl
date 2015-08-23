@@ -34,8 +34,10 @@
     @lines = splice(@lines, 1, -1);
     if ( $ARGV[1] eq "--exclude" ) {
         @lines = grep { $_ ne $element } @lines;
-    } elsif ( $ARGV[1] eq "--prepend" ) {
+    } elsif ( $ARGV[1] eq "--first" ) { # Prepend
         unshift(@lines, $element);
+    } elsif ( $ARGV[1] eq "--last" ) { # Append
+        push(@lines, $element);
     } elsif ( $ARGV[1] eq "--exists" ) {
         foreach my $line (@lines) {
             exit 0 if $line eq $element;
@@ -43,6 +45,8 @@
         exit 1;
     } elsif ( $ARGV[1] eq "--existsat" ) {
         my $idx = $ARGV[2];
+        $idx = -1 if $idx eq "last";
+        $idx = 0 if $idx eq "first";
         exit( scalar(@lines) > $idx && $lines[$idx] eq $element ? 0 : 1 );
     }
     run_command(q#<%= @write_command %> # . join(" ", map { "\047$_\047" } @lines));
