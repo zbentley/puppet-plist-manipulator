@@ -1,13 +1,14 @@
 require "acceptance/spec_helper"
-# Keep the tempfile variable in a global to prevent it from being destroyed
-# when we don't want it to be.
-tempfile = ""
+# Keep the tempfile variables in a global to prevent them from being destroyed
+# when we don't want them to be.
+$tempfiles = []
 def tempfile_manifest(opts)
   tmpfile = Tempfile.new(['com.test', '.plist'], '/Users/zbentley/Library/Preferences')
+  $tempfiles.push(tmpfile)
   plist_file_name = File.basename(tmpfile.path)
   manifest_attrs = "";
   opts.each do |key, value|
-    manifest_attrs += "#{key}  =>  #{value},\n"
+    manifest_attrs += "#{key}  =>  '#{value}',\n"
   end
 
     manifest = <<END
@@ -24,9 +25,10 @@ END
 end
 
 def write_values(filename, key, values = "")
-  describe command("/usr/bin/defaults write #{filename} #{key} -array #{values}"), "can setup file" do
-    its(:exit_status) { should be_zero }
-    its(:stdout) { should be_empty }
+  it "can set up file" do
+    cmd = command("/usr/bin/defaults write #{filename} #{key} -array #{values}")
+    expect(cmd.exit_status).to be_zero
+    expect(cmd.stdout).to be_empty
   end
 end
 
@@ -34,19 +36,23 @@ def check_values(filename, key, values = [])
   cmd = command("/usr/bin/defaults read #{filename} #{key}")
   it ".plist has expected values" do
     # Discard the first and last (parentheses), trailing commas, and strip whitespace on the rest.
-    significantvalues = cmd.stdout.split("\n").map! { |item| item.strip().chomp(",") }
+    significantvalues = cmd.stdout.split("\n").map! do |item|
+      item.strip().chomp(",")
+    end
     expect(significantvalues[1...-1]).to eq values
   end
 end
 
-# requires homebrew binutils/stat
 context "with plist files in ~/Library/Preferences" do
 
-  options = tempfile_manifest(:ensure => "present", :key => "foo", :value => "bar")
+  context "with non-array item" do
+    options = tempfile_manifest(:ensure => "present", :key => "foo", :value => "bar")
 
-  with_manifest(options[:manifest], "non-array item", :compile_failure => /TODO DODO/) do
-    pending("not implemented")
+    with_manifest(options[:manifest], "scalar item", :compile_failure => /TODO DODO/) do
+      pending("not implemented")
+    end
   end
+
 
   context "with an empty .plist file" do
     options = tempfile_manifest(:type => "array-item", :key => "foo", :value => "bar")
@@ -57,12 +63,32 @@ context "with plist files in ~/Library/Preferences" do
     end
   end
 
-  context "with pre-existing .plist file contents" do
+  context "when prepending a single value" do
     options = tempfile_manifest(:type => "array-item", :key => "foo", :value => "bar")
     write_values(options[:filename], "foo", "foo")
 
     with_manifest(options[:manifest], "single array item") {
       check_values(options[:filename], "foo", ["bar", "foo"])
+    }
+  end
+
+  context "with existing elements containing spaces" do
+    options = tempfile_manifest(:type => "array-item", :key => "foo", :value => "bar")
+    write_values(options[:filename], "foo", "' foo ' 'thing1 thing2 thing3' ' a b '")
+
+    with_manifest(options[:manifest], "single array item") {
+      # 'defaults' will literally-quote things when it feels like it.
+      check_values(options[:filename], "foo", ["bar", '" foo "', '"thing1 thing2 thing3"', '" a b "'])
+    }
+  end
+
+  context "with to-be-added elements containing spaces" do
+    options = tempfile_manifest(:type => "array-item", :key => "foo", :value => " thing1 thing2 ")
+    write_values(options[:filename], "foo", "' foo ' bar")
+
+    with_manifest(options[:manifest], "single array item containing spaces") {
+      # 'defaults' will literally-quote things when it feels like it.
+      check_values(options[:filename], "foo", ['" thing1 thing2 "', '" foo "', "bar"])
     }
   end
 
@@ -72,15 +98,15 @@ context "with plist files in ~/Library/Preferences" do
 
     with_manifest(options[:manifest], "single array item") do
       check_values(options[:filename], "foo", ["bar"])
-      describe file(options[:filepath]) do
-        it { should be_file }
+      it "creates .plist file during run" do
+        expect(file(options[:filepath])).to be_file
       end
     end
   end
 
   # in each write/positional mode:
   # => puts existing keys back
-  # => preserves spaces in existing keys
-  # => preserves spaces in added keys
+  # => preserves spaces/special chars in existing keys
+  # => preserves spaces/special chars in added keys
 
 end

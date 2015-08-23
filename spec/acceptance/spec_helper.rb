@@ -33,10 +33,12 @@ def with_manifest(manifest, name = false, opts = {}, &block)
           expect(result.exit_status).to eq 1
         end
       elsif opts[:expect_changes]
-        it "makes changes" do
-          if opts[:apply_failure]
+        if opts[:apply_failure]
+          it "fails to make changes" do
             expect(result.exit_status).to eq 6
-          else
+          end
+        else
+          it "successfully makes changes" do
             expect(result.exit_status).to eq 2
           end
         end
@@ -48,16 +50,19 @@ def with_manifest(manifest, name = false, opts = {}, &block)
 
       if opts[:apply_failure] || opts[:compile_failure]
         it "outputs expected errors" do
-          expect(result.stdout).to match /^Error:.*#{expected_failure}/
+          expect(result.stderr).to match /^Error:.*#{expected_failure}/
         end
       else
         it "does not output errors" do
-          expect(result.stdout).not_to match /^Error:.+/
+          expect(result.stderr).to be_empty
+          expect(result.stdout).not_to match /^Error:/
         end
       end
       if opts[:compile_failure]
         it "keeps failing" do
-          expect(command(cmd).exit_status).to eq 1
+          result = command(cmd)
+          expect(result.exit_status).to eq 1
+          expect(result.stderr).to match /^Error:.*#{expected_failure}/
         end
       else
         it "is idempotent" do

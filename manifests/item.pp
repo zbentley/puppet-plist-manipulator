@@ -31,7 +31,16 @@ define plist::item (
       fail($xorfailuremessage)
     } else {
       $write_command = "/usr/bin/defaults write ${domain} ${key}"
-      $read_command = "/usr/bin/defaults read ${domain} ${key}"
+      # This is inelegant and probably a bug surface: check to see if the domain
+      # exists in the list of available domains (with some silly spacing/quoting
+      # manipulation). If so, ensure we can read it. If it doesn't exist, assume
+      # it can be created.
+      $read_command = sprintf(
+        'echo " $(defaults domains) " | grep  -q " %s,* " && /usr/bin/defaults read %s %s || true',
+        regsubst($domain, '[.]plist\z', "", 'GI'),
+        $domain,
+        $key
+      )
     }
   } elsif ( ! $plistfile ) {
     fail($xorfailuremessage)
@@ -52,7 +61,7 @@ define plist::item (
       before_element => $before_element,
       after_element => $after_element,
       write_command => "${write_command} -array",
-      read_command => "${read_command} -array",
+      read_command => $read_command,
       append_command => "${write_command} -array-add",
     }
   } else {
@@ -65,5 +74,4 @@ define plist::item (
     # Assert ensure as present or absent (array allows 'once').
     # Assert no array-only args.
   }
-
 }

@@ -4,6 +4,14 @@ require 'puppet-lint/tasks/puppet-lint'
 require 'rspec/core/rake_task'
 require 'rspec'
 
+def get_pattern_from_args(args)
+  returnvalue = '*_spec.rb'
+  if args[:pattern]
+    returnvalue = "*#{args[:pattern]}*"
+  end
+  return returnvalue
+end
+
 RSpec.configure do |config|
   config.expect_with :rspec do |c|
     c.syntax = :expect
@@ -26,9 +34,39 @@ task :validate do
   end
 end
 
-desc "Run local acceptance tests"
-RSpec::Core::RakeTask.new(:serverspec) do |t|
-  # Acceptance tests require symlinks created by spec_prep, so run it now.
+RSpec::Core::RakeTask.new(:acceptance_internal, [:pattern]) do |t, args|
+  t.pattern = args[:pattern]
+end
+# Acceptance tests require symlinks created by spec_prep, so run it before them.
+task :acceptance_internal => [:spec_prep]
+Rake::Task[:acceptance_internal].clear_comments()
+Rake::Task[:acceptance_internal].enhance do
+  Rake::Task[:spec_clean].invoke
+end
+
+desc "Test the acceptance harness to make sure it will work"
+task(:acceptance_selftest) do |t|
+  Rake::Task[:acceptance_internal].invoke('spec/selftest/**/*_spec.rb')
+end
+
+task(:acceptance ) do |t|
+  Rake::Task[:acceptance_internal].invoke('spec/acceptance/**/*_spec.rb')
+end
+
+# Blow away and re-create some of the helpers from the puppetlabs spec helper.
+# This is done to allow an optional "pattern" regex that can be used to only run
+# some subset of tests by name.
+Rake::Task[:spec_standalone].clear
+desc "Run spec tests on an existing fixtures directory"
+RSpec::Core::RakeTask.new(:spec_standalone, [:pattern]) do |t, args|
+  pattern = get_pattern_from_args(args)
+  t.pattern = "spec/{classes,defines,unit,functions,hosts,integration}/**/#{pattern}"
+end
+
+Rake::Task[:spec].clear
+desc "Run spec tests in a clean fixtures directory"
+RSpec::Core::RakeTask.new(:spec, [:pattern]) do |t, args|
   Rake::Task[:spec_prep].invoke
-  t.pattern = 'spec/acceptance/**/*_spec.rb'
+  Rake::Task[:spec_standalone].invoke(args)
+  Rake::Task[:spec_clean].invoke
 end

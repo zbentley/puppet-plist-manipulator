@@ -55,7 +55,7 @@ define plist::array_item (
 				}
 			}
 			exec { "Append new value":
-				command => "${append_command} \"${value}\"",
+				command => "${append_command} ${value}",
 				# Only append entries if they exist and are not last.
 				unless => "${sanitizecmd} '${value}' --existsat -1";
 			}
@@ -71,7 +71,7 @@ define plist::array_item (
 				}
 			}
 			exec { "Prepend new value":
-				command => "echo '${value}' \$(${sanitizecmd}) | xargs ${write_command}",
+				command => "${sanitizecmd} '${value}' --prepend",
 				# Only prepend entries if they exist and are not first.
 				unless => "${sanitizecmd} '${value}' --exists";
 			}
