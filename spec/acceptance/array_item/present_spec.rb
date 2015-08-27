@@ -5,7 +5,7 @@ def test_common_cases (opts)
   context "when prepending to an empty .plist file" do
     options = tempfile_manifest(opts.merge( :value => "bar" ))
     write_array_values(options[:filename], "foo")
-    with_manifest(options[:manifest], "single array item") do
+    with_manifest(options[:manifest], "empty array item") do
       check_array_values(options[:filename], "foo", ["bar"])
     end
   end
@@ -13,7 +13,7 @@ def test_common_cases (opts)
   context "when appending to an empty .plist file" do
     options = tempfile_manifest(opts.merge( :value => "bar" ))
     write_array_values(options[:filename], "foo")
-    with_manifest(options[:manifest], "single array item") do
+    with_manifest(options[:manifest], "empty array item") do
       check_array_values(options[:filename], "foo", ["bar"])
     end
   end
