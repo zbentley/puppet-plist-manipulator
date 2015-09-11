@@ -7,13 +7,6 @@ opts = {
   :value => "bar",
 }
 
-context "with non-array item" do
-  options = tempfile_manifest(opts.except(:type).merge( :ensure => "present" ))
-  with_manifest(options[:manifest], "scalar item", :compile_failure => /TODO DODO/) do
-    pending("not implemented")
-  end
-end
-
 context "with existing elements containing spaces" do
   options = tempfile_manifest(opts)
   write_array_values(options[:filename], "foo", "' foo ' 'thing1 thing2 thing3' ' a b '")
