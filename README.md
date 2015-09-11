@@ -36,10 +36,12 @@ Known issues:
 - Resources can be redeclared if the same plist is addressed with plistfile and without.
 
 TODOs:
-	- Tests for ensure empty-present on "array" "dict" "dictionary".
 	- Make array-items perform type assertions. 
-	- Make a dict-item class
+	- Fix unit tests.
+	- Consider removing the distinction between array/dict and array-item/dict-item; infer backend heruistically based on $value.
+	- Tests for ensure empty-present on "array" "dict" "dictionary".
 	- Tests for "traditional" types.
+	- Make a dict-item class
 	- Implement "atposition" for non append/prepend cases.
 	- Remove ensure => exists support from array item.
 	- Git remove sublime history files.
