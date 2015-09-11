@@ -49,7 +49,8 @@ task(:acceptance_selftest) do |t|
   Rake::Task[:acceptance_internal].invoke('spec/selftest/**/*_spec.rb')
 end
 
-task(:acceptance ) do |t|
+desc "Run local acceptance tests"
+task(:acceptance) do |t|
   Rake::Task[:acceptance_internal].invoke('spec/acceptance/**/*_spec.rb')
 end
 

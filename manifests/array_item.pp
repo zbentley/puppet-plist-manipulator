@@ -19,7 +19,7 @@ define plist::array_item (
 	}
 
 	# Use a template to get the script. We don't need a file resource created
-	# on the system, so we don't declare a File, and the file() function
+	# on the system, so we don't declare a File, and besides: the file() function
 	# doesn't work with relative paths. The template() function does, however.
 	$sanitizecmd = template("plist/array_manipulator.pl")
 
