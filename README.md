@@ -38,18 +38,19 @@ Known issues:
 TODOs:
 	- Make array-items perform type assertions. 
 	- Fix unit tests.
-	- Consider removing the distinction between array/dict and array-item/dict-item; infer backend heruistically based on $value.
-	- Tests for ensure empty-present on "array" "dict" "dictionary".
 	- Tests for "traditional" types.
 	- Make a dict-item class
 	- Implement "atposition" for non append/prepend cases.
 	- Remove ensure => exists support from array item.
 	- Git remove sublime history files.
+	- When feature-complete/api stable: add unit tests for all "fail" cases.
 
 Post-release todos:
+	- Support multielement declarations of arrays or dicts.
 	- Before/after positionals?
 	- Before/after recipes using puppet builtin before/after.
 	- Identity/puppet deduplication support.
+	- force-write functionality. I.e. overwrite an existing value, even one of the wrong type.
 
 
 Array Presence operations:

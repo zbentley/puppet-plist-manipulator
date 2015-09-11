@@ -45,6 +45,11 @@ def check_array_values(filename, key, values = [])
     significantvalues = cmd.stdout.split("\n").map! do |item|
       item.strip().chomp(",")
     end
+    # Empty arrays include extra curlies in the output, for some reason.
+    if significantvalues[0] == "{" && significantvalues[-1] == "}"
+      significantvalues = significantvalues[1...-1]
+    end
+    # Also strip off the array start/end parentheses.
     expect(significantvalues[1...-1]).to eq values
   end
 end

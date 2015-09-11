@@ -23,8 +23,29 @@ define plist::item (
     provider => "shell"
   }
 
-  if $key == undef or ( $value == undef and $ensure != "absent" ) {
-    fail("'key' and 'value'/'ensure => absent' must be set.")
+  # If no type is set, try to infer string, int, bool, or float.
+  $_type = $type ? {
+    "dictionary" => "dict", # -dictionary is not an allowed type signature.
+    undef => $value ? {
+      /^\d?[.]\d+$/ => "float",
+      /^\d$/        => "integer",
+      /^true$/      => "boolean",
+      /^false$/     => "boolean",
+      /^yes$/       => "boolean",
+      /^no$/        => "boolean",
+      default       => "string"
+    },
+    default => $type,
+  }
+
+  # Assert-fail on invalid types. This is done in Puppet since the defaults utility interprets invalid/nonsensical type signatures as -string.
+  $validtypes = [ "dict", "dict-item", "array", "array-item", "boolean", "float", "integer", "string" ]
+  if ! ( $_type in $validtypes ) {
+    fail("Invalid type: ${type}. Valid types are: " + join($validtypes, ", "))
+  }
+
+  if $key == undef {
+    fail("'key' must be set.")
   }
 
   $xorfailuremessage = "Only one of 'domain' and 'plistfile' must be set (xor)."
@@ -78,7 +99,7 @@ define plist::item (
 
   # Array items are complex enough that their handling is delegated to a separate
   # module.
-  if $type == "array-item" {
+  if $_type == "array-item" {
     plist::array_item { $signature :
       ensure => $ensure,
       value => $value,
@@ -89,42 +110,34 @@ define plist::item (
       read_command => $read_command,
       append_command => "${write_command} -array-add",
     }
-  } elsif ! $ensure in ["present", "absent"] {
+  } elsif ! ( $ensure in ["present", "absent"] ) {
     fail("'ensure' must be 'present', or 'absent'.")
   } elsif $append != undef or $before_element != undef or $after_element != undef {
     fail("'append', 'before_element', and 'after_element' can only be used if 'type' is 'array-item'.")
   # Don't support any of the core defaults 'array' types.
   } elsif $type =~ /^array.+/ {
     fail("Type ${type} is not supported; use 'array-item' (for individual array elements) or 'array' (for addition/removal of array-type keys) instead.")
-  } elsif $type =~ /^array|dict(?:ionary)?$/ and $ensure == "present" { # ensure => absent will be handled in the main case below.
+  } elsif $type =~ /^(array|dict|dictionary)$/ and $ensure == "present" { # ensure => absent will be handled in the main case below.
     # Allow ensure present/absent on array/dict type elements without a value.
     if ( $value != undef ) {
       fail("'value' is not supported with 'array' or 'dict[ionary]' types; use 'array-item' or 'dict-item' instead")
     } else {
       # Run the type assertion no matter what to surface "you're trying to ensure-present on something of the wrong type" errors.
       exec { "Install empty '${type}' element '${key}'":
-        command => "${type_assert_command} && ${write_command} -${type}",
+        # If the key doesn't exist ($read_command only checks for that now, since the "unless" clause will prevent the command from
+        # running if the key is already present with the write type), create it. Otherwise, fail the type assertion.
+        command => "${read_command} && ${write_command} -${_type} || ${type_assert_command}",
+        # Only create an empty array-type element if it doesn't exist with the right type.
         unless => "${read_command} && ${type_assert_command}";
       }
     }
   }
   else {
-    # If no type is set, try to infer string, int, bool, or float.
-    $_type = $type ? {
-      undef => $value ? {
-        /^\d?[.]\d+$/ => "float",
-        /^\d$/        => "integer",
-        /^true$/      => "boolean",
-        /^false$/     => "boolean",
-        /^yes$/       => "boolean",
-        /^no$/        => "boolean",
-        default       => "string"
-      },
-      default => $type,
-    }
+    # ZBTODO assert value is defined
+    # ZBTODO handle ensure absent
 
     exec { "Set '${key}' to '${value}' in '${domain}'":
-      command => "${type_assert_command} && ${write_command} -${type} ${value}",
+      command => "${type_assert_command} && ${write_command} -${_type} ${value}",
       # Don't do it if the element exists, is of the right type, and has the right value.
       unless => "${read_command} && ${type_assert_command}";
       # ZBTODO consider a "force" option here to just issue the write command.
