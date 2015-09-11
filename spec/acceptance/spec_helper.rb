@@ -14,7 +14,10 @@ def tempfile_manifest(opts)
   plist_file_name = File.basename(tmpfile.path)
   manifest_attrs = "";
   opts.each do |key, value|
-    manifest_attrs += "#{key}  =>  '#{value}',\n"
+    unless value.is_a?(TrueClass) || value.is_a?(FalseClass)
+      value = "'#{value}'" # Don't quote booleans.
+    end
+    manifest_attrs += "#{key}  =>  #{value},\n"
   end
 
     manifest = <<END

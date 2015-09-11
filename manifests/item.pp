@@ -1,13 +1,13 @@
 # Public: Set a system config option with the OS X defaults system
 define plist::item (
+  $key, # relevant only to commands
   $ensure      =  "present",
   $value       = undef,
 
   $type        = undef, # relevant only to dispatcher. all core types, minus the -add types, plus array-item, dict-item
 
-  $host        = undef, # relevant only to commands
+  $host        = "any", # relevant only to commands
   $domain      = undef, # relevant only to commands
-  $key         = undef, # relevant only to commands
   $user        = undef, # relevant only to commands
   $plistfile = undef, # relevant only to commands
 
@@ -26,6 +26,9 @@ define plist::item (
   # If no type is set, try to infer string, int, bool, or float.
   $_type = $type ? {
     "dictionary" => "dict", # -dictionary is not an allowed type signature.
+    # boolean -> bool
+    # int -> integer
+    # str -> string
     undef => $value ? {
       /^\d?[.]\d+$/ => "float",
       /^\d$/        => "integer",
@@ -37,26 +40,30 @@ define plist::item (
     },
     default => $type,
   }
-
-  # Assert-fail on invalid types. This is done in Puppet since the defaults utility interprets invalid/nonsensical type signatures as -string.
-  $validtypes = [ "dict", "dict-item", "array", "array-item", "boolean", "float", "integer", "string" ]
-  if ! ( $_type in $validtypes ) {
-    fail("Invalid type: ${type}. Valid types are: " + join($validtypes, ", "))
+  # Assert-fail on invalid types. This is done in Puppet since the "defaults"
+  # utility interprets invalid/nonsensical type signatures as -string.
+  validate_re($_type, "^(?:dict|dict[-]item|array|array[-]item|boolean|float|integer|string)")
+  validate_string($key, $host)
+  if $append != undef {
+    validate_bool($append)
+  }
+  if $key == undef or $host == undef {
+    fail("'key' and 'host' cannot be undef.")
+  }
+  if $user != undef {
+    validate_string($user)
   }
 
-  if $key == undef {
-    fail("'key' must be set.")
-  }
 
   $xorfailuremessage = "Only one of 'domain' and 'plistfile' must be set (xor)."
   if $domain != undef {
+    validate_string($domain)
     if $plistfile {
       fail($xorfailuremessage)
     } else {
       $hostswitch  = $host ? {
         "currentHost" => "-currentHost",
         "current"     => "-currentHost",
-        undef         => "",
         "any"         => "",
         "all"         => "",
         default       => "-host $host",
@@ -91,6 +98,7 @@ define plist::item (
   } elsif $host != undef {
     fail("'host' cannot be combined with 'plistfile'.")
   } else {
+    validate_absolute_path($plistfile)
     # ZBTODO plistbuddy support
     fail("'plistfile' is not implemented.")
   }
@@ -115,13 +123,9 @@ define plist::item (
   } elsif $append != undef or $before_element != undef or $after_element != undef {
     fail("'append', 'before_element', and 'after_element' can only be used if 'type' is 'array-item'.")
   # Don't support any of the core defaults 'array' types.
-  } elsif $type =~ /^array.+/ {
-    fail("Type ${type} is not supported; use 'array-item' (for individual array elements) or 'array' (for addition/removal of array-type keys) instead.")
-  } elsif $type =~ /^(array|dict|dictionary)$/ and $ensure == "present" { # ensure => absent will be handled in the main case below.
+  } elsif $_type =~ /^(array|dict)$/ and $ensure == "present" { # ensure => absent will be handled in the main case below.
     # Allow ensure present/absent on array/dict type elements without a value.
-    if ( $value != undef ) {
-      fail("'value' is not supported with 'array' or 'dict[ionary]' types; use 'array-item' or 'dict-item' instead")
-    } else {
+    if ( $value == undef ) {
       # Run the type assertion no matter what to surface "you're trying to ensure-present on something of the wrong type" errors.
       exec { "Install empty '${type}' element '${key}'":
         # If the key doesn't exist ($read_command only checks for that now, since the "unless" clause will prevent the command from
@@ -130,6 +134,8 @@ define plist::item (
         # Only create an empty array-type element if it doesn't exist with the right type.
         unless => "${read_command} && ${type_assert_command}";
       }
+    } else {
+      fail("'value' is not supported with 'array' or 'dict[ionary]' types; use 'array-item' or 'dict-item' instead")
     }
   }
   else {
