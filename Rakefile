@@ -5,9 +5,12 @@ require 'rspec/core/rake_task'
 require 'rspec'
 
 def get_pattern_from_args(args)
-  returnvalue = '*_spec.rb'
-  if args[:pattern]
-    returnvalue = "*#{args[:pattern]}*"
+  pattern = args[:pattern] || ""
+
+  if pattern.end_with? ".rb"
+    returnvalue = "**/*#{args[:pattern]}"
+  else
+    returnvalue = "**/*#{args[:pattern]}*{,/**}_spec.rb"
   end
   return returnvalue
 end
@@ -35,11 +38,9 @@ task :validate do
 end
 
 RSpec::Core::RakeTask.new(:acceptance_internal, [:pattern]) do |t, args| 
-  pattern = get_pattern_from_args(args)
-  if pattern =~ /selftest/
-    t.pattern = "spec/acceptance/selftest/**"
-  else
-    t.pattern = "spec/acceptance/**/#{pattern}"
+  t.pattern = get_pattern_from_args(args)
+  t.pattern = "spec/acceptance/#{t.pattern}"
+  unless t.pattern  =~ /selftest/
     t.exclude_pattern = "spec/acceptance/selftest/**"
   end
 end

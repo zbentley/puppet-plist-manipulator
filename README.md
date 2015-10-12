@@ -37,9 +37,8 @@ Known issues:
 
 TODOs:
 	- Make array-items perform type assertions. 
-	- Fix unit tests.
 	- Tests for "traditional" types.
-	- Make a dict-item class
+	- Make a dict-item class.
 	- Implement "atposition" for non append/prepend cases.
 	- Remove ensure => exists support from array item.
 	- Git remove sublime history files.
@@ -47,6 +46,7 @@ TODOs:
 
 Post-release todos:
 	- Support multielement declarations of arrays or dicts.
+	- Acceptance harness runs all (annotated) compile-failing unit tests to verify that they don't change system state?
 	- Before/after positionals?
 	- Before/after recipes using puppet builtin before/after.
 	- Identity/puppet deduplication support.
