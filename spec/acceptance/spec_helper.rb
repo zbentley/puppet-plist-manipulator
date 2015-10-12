@@ -14,8 +14,9 @@ def tempfile_manifest(opts)
   plist_file_name = File.basename(tmpfile.path)
   manifest_attrs = "";
   opts.each do |key, value|
+    # Don't quote booleans.
     unless value.is_a?(TrueClass) || value.is_a?(FalseClass)
-      value = "'#{value}'" # Don't quote booleans.
+      value = "'#{value}'"
     end
     manifest_attrs += "#{key}  =>  #{value},\n"
   end
@@ -43,7 +44,8 @@ end
 
 def check_array_values(filename, key, values = [])
   cmd = command("/usr/bin/defaults read #{filename} #{key}")
-  it ".plist has expected values" do
+  it "key has expected values" do
+    expect(cmd.exit_status).to be_zero
     # Discard the first and last (parentheses), trailing commas, and strip whitespace on the rest.
     significantvalues = cmd.stdout.split("\n").map! do |item|
       item.strip().chomp(",")
@@ -57,6 +59,14 @@ def check_array_values(filename, key, values = [])
   end
 end
 
+def check_scalar_value(filename, key, value)
+  cmd = command("/usr/bin/defaults read #{filename} #{key}")
+  it "key has expected value" do
+    expect(cmd.exit_status).to be_zero
+    # Remove a single trailing newline. The rest are useful for testing literal newlines.
+    expect(cmd.stdout.chomp).to eq value
+  end
+end
 
 def with_manifest(manifest, name = false, opts = {}, &block)
   unless opts.has_key? :expect_changes

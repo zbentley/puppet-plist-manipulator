@@ -54,12 +54,10 @@ define plist::item (
     validate_string($user)
   }
 
-
-  $xorfailuremessage = "Only one of 'domain' and 'plistfile' must be set (xor)."
   if $domain != undef {
     validate_string($domain)
     if $plistfile {
-      fail($xorfailuremessage)
+      fail("Only one of 'domain' and 'plistfile' must be set (xor).")
     } else {
       $hostswitch  = $host ? {
         "currentHost" => "-currentHost",
@@ -70,21 +68,26 @@ define plist::item (
       }
       $cmd_root = "/usr/bin/defaults ${hostswitch}"
       $write_command = "${cmd_root} write ${domain} ${key}"
-      # This is inelegant and probably a bug surface: check to see if the domain
-      # exists in the list of available domains (with some silly spacing/quoting
-      # manipulation). If so, ensure we can read it. If it doesn't exist, assume
-      # it can be created.
-      $read_command = sprintf(
-        'echo " $(%s domains) " | grep -q " %s,* " && %s read %s %s || true',
-        $cmd_root,
-        regsubst($domain, '[.]plist\z', "", 'GI'),
+      $key_exists_command = sprintf(
+        ' ( %s read %s %s 2> /dev/null ) ',
         $cmd_root,
         $domain,
         $key
       )
+      $domain_exists_command = sprintf(
+        ' ( echo " $(%s domains) " | grep -q " %s,* " ) ',
+        $cmd_root,
+        regsubst($domain, '[.]plist\z', "", 'GI')
+      )
+      # This is inelegant and probably a bug surface: check to see if the domain
+      # exists in the list of available domains (with some silly spacing/quoting
+      # manipulation). If so, ensure we can read it. If it doesn't exist, assume
+      # it can be created.
+      $key_writeable_command = "${domain_exists_command} && ${key_exists_command} || true"
+
 
       $type_assert_command = sprintf(
-        "%s read-type %s %s | grep -q ' %s' || ( echo Key '%s' exists, but is not of type '%s'; exit 1 )",
+        "( %s read-type %s %s | grep -q ' %s' || ( echo Key '%s' exists, but is not of type '%s'; exit 1 ) )",
         $cmd_root,
         $domain,
         $key,
@@ -94,7 +97,7 @@ define plist::item (
       )
     }
   } elsif ! $plistfile {
-    fail($xorfailuremessage)
+    fail("Only one of 'domain' and 'plistfile' must be set (xor).")
   } elsif $host != undef {
     fail("'host' cannot be combined with 'plistfile'.")
   } else {
@@ -103,19 +106,17 @@ define plist::item (
     fail("'plistfile' is not implemented.")
   }
 
-  $signature = "TODO"
-
   # Array items are complex enough that their handling is delegated to a separate
   # module.
   if $_type == "array-item" {
-    plist::array_item { $signature :
+    plist::array_item { "TODO" : # uniqueness-enforcing signatures will go here someday.
       ensure => $ensure,
       value => $value,
       append => $append,
       before_element => $before_element,
       after_element => $after_element,
       write_command => "${write_command} -array",
-      read_command => $read_command,
+      read_command => $key_writeable_command,
       append_command => "${write_command} -array-add",
     }
   } elsif ! ( $ensure in ["present", "absent"] ) {
@@ -128,24 +129,38 @@ define plist::item (
     if ( $value == undef ) {
       # Run the type assertion no matter what to surface "you're trying to ensure-present on something of the wrong type" errors.
       exec { "Install empty '${type}' element '${key}'":
-        # If the key doesn't exist ($read_command only checks for that now, since the "unless" clause will prevent the command from
-        # running if the key is already present with the write type), create it. Otherwise, fail the type assertion.
-        command => "${read_command} && ${write_command} -${_type} || ${type_assert_command}",
+        # If the key doesn't exist ($key_writeable_command only checks for that now, since the "unless" clause will prevent the command from
+        # running if the key is already present with the right type), create it. Otherwise, fail the type assertion.
+        command => "${key_writeable_command} && ${write_command} -${_type} || ${type_assert_command}",
         # Only create an empty array-type element if it doesn't exist with the right type.
-        unless => "${read_command} && ${type_assert_command}";
+        unless => "${key_writeable_command} && ${type_assert_command}";
       }
     } else {
       fail("'value' is not supported with 'array' or 'dict[ionary]' types; use 'array-item' or 'dict-item' instead")
     }
   }
   else {
+    $single_write = "${write_command} -${_type} '${value}'"
     # ZBTODO assert value is defined
     # ZBTODO handle ensure absent
 
-    exec { "Set '${key}' to '${value}' in '${domain}'":
-      command => "${type_assert_command} && ${write_command} -${_type} ${value}",
+    # If the domain or key do not exist, write it
+    # If the key exists and is the right type, write it
+    # If the key exists with the wrong type and --force is set, write it
+    # Else, fail with the type assertion
+
+    exec { "Create '${key}' with '${value}' in '${domain}'":
+      # A somewhat tortured way of writing "does it exist" ? "is it the right type" ? "write it" : "fail" : "write it".
+      command => $single_write,
       # Don't do it if the element exists, is of the right type, and has the right value.
-      unless => "${read_command} && ${type_assert_command}";
+      unless => "${domain_exists_command} && ${key_exists_command}";
+      # ZBTODO consider a "force" option here to just issue the write command.
+    }
+
+    exec { "Set '${key}' to '${value}' in '${domain}'":
+      command => "${type_assert_command} && ${single_write}",
+      # Only run if the domain exists and the key isn't already the correct value.
+      onlyif => "${domain_exists_command} && test '${value}' != $(${key_exists_command} | xargs echo -e)";
       # ZBTODO consider a "force" option here to just issue the write command.
     }
   }
