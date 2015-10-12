@@ -1,4 +1,4 @@
-require 'rubygems'
+#require 'rubygems'
 require 'puppetlabs_spec_helper/rake_tasks'
 require 'puppet-lint/tasks/puppet-lint'
 require 'rspec/core/rake_task'
@@ -34,24 +34,26 @@ task :validate do
   end
 end
 
-RSpec::Core::RakeTask.new(:acceptance_internal, [:pattern]) do |t, args|
-  t.pattern = args[:pattern]
+RSpec::Core::RakeTask.new(:acceptance_internal, [:pattern]) do |t, args| 
+  pattern = get_pattern_from_args(args)
+  if pattern =~ /selftest/
+    t.pattern = "spec/acceptance/selftest/**"
+  else
+    t.pattern = "spec/acceptance/**/#{pattern}"
+    t.exclude_pattern = "spec/acceptance/selftest/**"
+  end
 end
-# Acceptance tests require symlinks created by spec_prep, so run it before them.
+
+# Acceptance tests require symlinks created by spec_prep, so run it after them.
 task :acceptance_internal => [:spec_prep]
 Rake::Task[:acceptance_internal].clear_comments()
 Rake::Task[:acceptance_internal].enhance do
   Rake::Task[:spec_clean].invoke
 end
 
-desc "Test the acceptance harness to make sure it will work"
-task(:acceptance_selftest) do |t|
-  Rake::Task[:acceptance_internal].invoke('spec/selftest/**/*_spec.rb')
-end
-
 desc "Run local acceptance tests"
-task(:acceptance) do |t|
-  Rake::Task[:acceptance_internal].invoke('spec/acceptance/**/*_spec.rb')
+task(:acceptance, [:pattern]) do |t, args|
+  Rake::Task[:acceptance_internal].invoke(args[:pattern])
 end
 
 # Blow away and re-create some of the helpers from the puppetlabs spec helper.
