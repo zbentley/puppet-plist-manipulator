@@ -146,7 +146,7 @@ define plist::item (
 
     # If the domain or key do not exist, write it
     # If the key exists and is the right type, write it
-    # If the key exists with the wrong type and --force is set, write it
+    # ZBTODO if the key exists with the wrong type and --force is set, write it
     # Else, fail with the type assertion
 
     exec { "Create '${key}' with '${value}' in '${domain}'":
@@ -154,14 +154,12 @@ define plist::item (
       command => $single_write,
       # Don't do it if the element exists, is of the right type, and has the right value.
       unless => "${domain_exists_command} && ${key_exists_command}";
-      # ZBTODO consider a "force" option here to just issue the write command.
     }
 
     exec { "Set '${key}' to '${value}' in '${domain}'":
       command => "${type_assert_command} && ${single_write}",
       # Only run if the domain exists and the key isn't already the correct value.
       onlyif => "${domain_exists_command} && test '${value}' != $(${key_exists_command} | xargs echo -e)";
-      # ZBTODO consider a "force" option here to just issue the write command.
     }
   }
 }

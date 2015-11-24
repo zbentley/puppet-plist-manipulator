@@ -9,7 +9,7 @@ set :disable_sudo, true
 # when we don't want them to be.
 $tempfiles = []
 def tempfile_manifest(opts)
-  tmpfile = Tempfile.new(['com.test', '.plist'], '/Users/zbentley/Library/Preferences')
+  tmpfile = Tempfile.new(['com.test', '.plist'], File.join(Dir.home, 'Library', 'Preferences'))
   $tempfiles.push(tmpfile)
   plist_file_name = File.basename(tmpfile.path)
   manifest_attrs = "";
@@ -77,6 +77,7 @@ def with_manifest(manifest, name = false, opts = {}, &block)
     tempfile = Tempfile.new(["temp_manifest", ".pp"])
     tempfile.write(manifest)
     tempfile.flush
+    # The harness creates a symlink to modules in the fixtures directory.
     puppetpath = File.join(Rake.application.original_dir, "spec", "fixtures")
     puppetpath = File.absolute_path(puppetpath)
     cmd = "puppet apply --detailed-exitcodes --color false --modulepath #{puppetpath}/modules #{tempfile.path}"

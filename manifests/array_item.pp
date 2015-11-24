@@ -26,11 +26,11 @@ define plist::array_item (
 
 	# Use a template to get the script. We don't need a file resource created
 	# on the system, so we don't declare a File, and besides: the file() function
-	# doesn't work with relative paths. The template() function does, however.
+	# doesn't work with relative paths, and the template() function does.
 	$sanitizecmd = template("plist/array_manipulator.pl")
 
 	$position = $append ? {
-		true    => "last",
+		true => "last",
 		false => "first"
 	}
 
