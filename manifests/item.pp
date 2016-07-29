@@ -25,7 +25,7 @@ define plist::item (
 
   # If no type is set, try to infer string, int, bool, or float.
   $_type = $type ? {
-    "dictionary" => "dict", # -dictionary is not an allowed type signature.
+    "dictionary" => "dict", # -dictionary is not an allowed type signature in "defaults".
     # boolean -> bool
     # int -> integer
     # str -> string

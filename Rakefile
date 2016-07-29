@@ -45,17 +45,14 @@ RSpec::Core::RakeTask.new(:acceptance_internal, [:pattern]) do |t, args|
   end
 end
 
-# Acceptance tests require symlinks created by spec_prep, so run it after them.
-task :acceptance_internal => [:spec_prep]
-Rake::Task[:acceptance_internal].clear_comments()
-Rake::Task[:acceptance_internal].enhance do
-  Rake::Task[:spec_clean].invoke
-end
-
 desc "Run local acceptance tests"
 task(:acceptance, [:pattern]) do |t, args|
+  Rake::Task[:spec_prep].invoke
   Rake::Task[:acceptance_internal].invoke(args[:pattern])
 end
+# Use enhance rather than adding to the block above so that cleanup runs
+# even if the acceptance harness crashes.
+Rake::Task['acceptance'].enhance(['spec_clean'])
 
 # Blow away and re-create some of the helpers from the puppetlabs spec helper.
 # This is done to allow an optional "pattern" regex that can be used to only run

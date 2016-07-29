@@ -3,61 +3,61 @@ GEM
   specs:
     CFPropertyList (2.2.8)
     diff-lcs (1.2.5)
-    facets (3.0.0)
-    facter (2.4.4)
+    facets (3.1.0)
+    facter (2.4.6)
       CFPropertyList (~> 2.2.6)
     hiera (1.3.4)
       json_pure
-    json_pure (1.8.2)
+    json_pure (2.0.2)
     metaclass (0.0.4)
     mocha (1.1.0)
       metaclass (~> 0.0.1)
-    multi_json (1.11.2)
+    multi_json (1.12.1)
     net-scp (1.2.1)
       net-ssh (>= 2.6.5)
-    net-ssh (2.9.2)
+    net-ssh (3.2.0)
     net-telnet (0.1.1)
-    puppet (3.8.2)
+    puppet (3.8.7)
       facter (> 1.6, < 3)
       hiera (~> 1.0)
       json_pure
-    puppet-lint (1.1.0)
-    puppet-syntax (2.0.0)
+    puppet-lint (2.0.0)
+    puppet-syntax (2.1.0)
       rake
-    puppetlabs_spec_helper (0.10.3)
+    puppetlabs_spec_helper (1.1.1)
       mocha
       puppet-lint
       puppet-syntax
       rake
       rspec-puppet
-    rake (10.4.2)
-    rspec (3.3.0)
-      rspec-core (~> 3.3.0)
-      rspec-expectations (~> 3.3.0)
-      rspec-mocks (~> 3.3.0)
-    rspec-core (3.3.2)
-      rspec-support (~> 3.3.0)
-    rspec-expectations (3.3.1)
+    rake (11.2.2)
+    rspec (3.5.0)
+      rspec-core (~> 3.5.0)
+      rspec-expectations (~> 3.5.0)
+      rspec-mocks (~> 3.5.0)
+    rspec-core (3.5.2)
+      rspec-support (~> 3.5.0)
+    rspec-expectations (3.5.0)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.3.0)
+      rspec-support (~> 3.5.0)
     rspec-its (1.2.0)
       rspec-core (>= 3.0.0)
       rspec-expectations (>= 3.0.0)
-    rspec-mocks (3.3.2)
+    rspec-mocks (3.5.0)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.3.0)
-    rspec-puppet (2.2.0)
+      rspec-support (~> 3.5.0)
+    rspec-puppet (2.4.0)
       rspec
-    rspec-support (3.3.0)
-    serverspec (2.21.1)
+    rspec-support (3.5.0)
+    serverspec (2.36.0)
       multi_json
       rspec (~> 3.0)
       rspec-its
-      specinfra (~> 2.38)
+      specinfra (~> 2.53)
     sfl (2.2)
-    specinfra (2.41.1)
+    specinfra (2.60.2)
       net-scp
-      net-ssh (~> 2.7)
+      net-ssh (>= 2.7, < 4.0)
       net-telnet
       sfl
 
@@ -70,4 +70,8 @@ DEPENDENCIES
   puppet (>= 2.7, < 4.0)
   puppet-lint (>= 0.3.2)
   puppetlabs_spec_helper (>= 0.1.0)
+  rspec-its
   serverspec
+
+BUNDLED WITH
+   1.12.4

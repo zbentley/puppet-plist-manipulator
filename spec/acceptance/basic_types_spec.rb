@@ -8,64 +8,40 @@ require "facets"
 # try to modify (wrong type)
 context "with nonexistent plist file" do
 
-  context "creating string value" do
-    opts = {
-      :type => "string",
-      :key => "foo",
-      :value => "bar"
-    }
-    options = tempfile_manifest(opts)
-    with_manifest(options[:manifest], "'string'-type item") do
-      cmd = command("/usr/bin/defaults read-type #{options[:filepath]} #{opts[:key]}")
-      it "creates a key with the right type" do
-        expect(cmd.exit_status).to be_zero
-        expect(cmd.stdout.strip()).to eq "Type is string"
-      end
-      check_scalar_value(options[:filename], opts[:key], opts[:value])
-      it "creates .plist file during run" do
-        expect(file(options[:filepath])).to be_file
-      end
-    end
-  end
+  test_manifest(
+    :type => "string",
+    :key => "foo",
+    :value => "bar",
+    :description => "new, nonempty string value"
+  )
 
-  context "writing empty string value" do
-    opts = {
-      :type => "string",
-      :key => "foo",
-      :value => ""
-    }
-    options = tempfile_manifest(opts)
-    with_manifest(options[:manifest], "'string'-type item") do
-      cmd = command("/usr/bin/defaults read-type #{options[:filepath]} #{opts[:key]}")
-      it "creates a key with the right type" do
-        expect(cmd.exit_status).to be_zero
-        expect(cmd.stdout.strip()).to eq "Type is string"
-      end
-      check_scalar_value(options[:filename], opts[:key], opts[:value])
-      it "creates .plist file during run" do
-        expect(file(options[:filepath])).to be_file
-      end
-    end
-  end
+  test_manifest(
+    :type => "string",
+    :key => "foo",
+    :value => "",
+    :description => "empty string value"
+  )
 
-  context "writing multiline string value" do
-    opts = {
+  test_manifest(
+    :type => "string",
+    :key => "foo",
+    :value => "\nfooo\nbar\n\n",
+    :description => "multiline string value"
+  )
+
+  pre_existing = tempfile_manifest(
+    :type => "string",
+    :key => "foo",
+    :value => "bar"
+  )
+  with_manifest(pre_existing[:manifest], "pre-existing") do
+    test_manifest(
       :type => "string",
       :key => "foo",
-      :value => "\nfooo\nbar\n\n"
-    }
-    options = tempfile_manifest(opts)
-    with_manifest(options[:manifest], "'string'-type item") do
-      cmd = command("/usr/bin/defaults read-type #{options[:filepath]} #{opts[:key]}")
-      it "creates a key with the right type" do
-        expect(cmd.exit_status).to be_zero
-        expect(cmd.stdout.strip()).to eq "Type is string"
-      end
-      check_scalar_value(options[:filename], opts[:key], opts[:value])
-      it "creates .plist file during run" do
-        expect(file(options[:filepath])).to be_file
-      end
-    end
+      :value => "baz",
+      :description => "modifying existing value",
+      :filepath => pre_existing[:filepath]
+    )
   end
 end
 

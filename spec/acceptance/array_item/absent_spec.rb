@@ -6,62 +6,86 @@ context "while in ensure => 'absent' mode" do
     :type => "array-item",
     :ensure => "absent",
     :key => "foo",
-    :value => "bar",
   }
 
-  context "with an empty .plist file" do
-    options = tempfile_manifest(opts)
-    write_array_values(options[:filename], "foo")
-    with_manifest(options[:manifest], "empty array item", :expect_changes => false) do
-      check_array_values(options[:filename], "foo", [])
+  # context ManifestTester.new(opts).with_array_values("foo"), "key: null in .plist file" do
+  #   it_behaves_like "idempotently makes changes"
+  # end
+
+  # context ManifestTester.new(opts), "empty .plist file" do
+  #   it_behaves_like "does not make changes"
+  # end
+
+  # context ManifestTester
+  # .new(opts.merge( :value => "bar" ))
+  # .with_array_values("foo", "baz"),
+  # "single-element, non-matching array" do
+  #   it_behaves_like "does not make changes"
+  #   context "after application" do
+  #     it "leaves correct data in the .plist file" do
+  #       expect(subject.read_array_value("foo")).to eq(["baz"])
+  #     end
+  #   end
+
+  # end
+
+  # context ManifestTester
+  # .new(opts.merge( :value => "bar" ))
+  # .with_array_values("foo", "bar"),
+  # "single-element, matching array" do
+  #   it_behaves_like "idempotently makes changes"
+  #   context "after application" do
+  #     it "leaves correct data in the .plist file" do
+  #       expect(subject.read_array_value("foo")).to eq([])
+  #     end
+  #   end
+  # end
+
+  context ManifestTester
+  .new(opts.merge( :value => "bar" ))
+  .with_array_values("foo", "bar bar bar"),
+  "multiple-element, matching array" do
+    it_behaves_like "idempotently makes changes"
+    context "after application" do
+      it "leaves correct data in the .plist file" do
+        expect(subject.read_array_value("foo")).to eq([])
+      end
     end
   end
 
-  context "with a single-element, non-matching array" do
-    options = tempfile_manifest(opts.merge( :value => "bar" ))
-    write_array_values(options[:filename], "foo", "baz")
-    with_manifest(options[:manifest], "single element array", :expect_changes => false) do
-      check_array_values(options[:filename], "foo", ["baz"])
+  context ManifestTester
+  .new(opts.merge( :value => "bar" ))
+  .with_array_values("foo", "first second"),
+  "multiple-element, non-matching array" do
+    it_behaves_like "does not make changes"
+    context "after application" do
+      it "leaves correct data in the .plist file" do
+        expect(subject.read_array_value("foo")).to eq(["first", "second"])
+      end
     end
   end
 
-  context "with a single-element, matching array" do
-    options = tempfile_manifest(opts.merge( :value => "bar" ))
-    write_array_values(options[:filename], "foo", "bar")
-    with_manifest(options[:manifest], "single element array") do
-      check_array_values(options[:filename], "foo", [])
+  context ManifestTester
+  .new(opts.merge( :value => "bar" ))
+  .with_array_values("foo", "bar first second"),
+  "varied array (single match)" do
+    it_behaves_like "idempotently makes changes"
+    context "after application" do
+      it "leaves correct data in the .plist file" do
+        expect(subject.read_array_value("foo")).to eq(["first", "second"])
+      end
     end
   end
 
-  context "with a multiple-element, matching array" do
-    options = tempfile_manifest(opts.merge( :value => "bar" ))
-    write_array_values(options[:filename], "foo", "bar bar bar")
-    with_manifest(options[:manifest], "single element array") do
-      check_array_values(options[:filename], "foo", [])
-    end
-  end
-
-  context "with a multiple-element, non-matching array" do
-    options = tempfile_manifest(opts.merge( :value => "bar" ))
-    write_array_values(options[:filename], "foo", "first second")
-    with_manifest(options[:manifest], "multiple element array", :expect_changes => false) do
-      check_array_values(options[:filename], "foo", ["first", "second"])
-    end
-  end
-
-  context "with a varied array (single match)" do
-    options = tempfile_manifest(opts.merge( :value => "bar" ))
-    write_array_values(options[:filename], "foo", "bar first second")
-    with_manifest(options[:manifest], "multiple element array") do
-      check_array_values(options[:filename], "foo", ["first", "second"])
-    end
-  end
-
-  context "with a varied array (multiple matches)" do
-    options = tempfile_manifest(opts.merge( :value => "bar" ))
-    write_array_values(options[:filename], "foo", "first bar second bar")
-    with_manifest(options[:manifest], "multiple element array") do
-      check_array_values(options[:filename], "foo", ["first", "second"])
+  context ManifestTester
+  .new(opts.merge( :value => "bar" ))
+  .with_array_values("foo", "first bar second bar"),
+  "varied array (single match)" do
+    it_behaves_like "idempotently makes changes"
+    context "after application" do
+      it "leaves correct data in the .plist file" do
+        expect(subject.read_array_value("foo")).to eq(["first", "second"])
+      end
     end
   end
 end

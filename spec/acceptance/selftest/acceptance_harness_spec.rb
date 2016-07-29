@@ -9,7 +9,13 @@ context "when testing harness" do
   # work.
   it "system has a usable stat" do
   	expect(command("stat -c %F " + __FILE__).exit_status).to be_zero
+    expect(command("bundle exec stat -c %F " + __FILE__).exit_status).to be_zero
   	expect(file("/dev/null").size).not_to be_nil
+  end
+
+  it "system has a usable id (if this fails, try rebooting)" do
+    expect(command("id -n -g ").exit_status).to be_zero
+    expect(command("id -n -g ").exit_status).to be_empty
   end
 
   with_manifest("file { '#{testpath}': ensure => 'present' }", "single-file") do
